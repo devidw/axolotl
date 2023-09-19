@@ -393,31 +393,28 @@ class ShareGPTPromptTokenizingStrategy(PromptTokenizingStrategy):
             ):
                 if isinstance(part, tuple):
                     if part[0] == "USER:":
-                        part = part[0] + part[1] if not user_token else part[1]
+                        part = f"<|im_start|>User\n{part[1].strip()}<|im_end|>"
+
                         # this is still the user query, we should
                         res = self._tokenize(
-                            part.strip(),
+                            part,
                             add_eos_token=False,
                             strip_bos_token=True,
                         )
-                        if user_token:
-                            res["input_ids"] = [user_token, *res["input_ids"]]
+
                         # everything from this is masked out from the labels
                         labels = [IGNORE_TOKEN_ID] * len(res["input_ids"])
                     elif part[0] == "ASSISTANT:":
                         # TODO label assistant token/tokens w/ IGNORE_TOKEN_ID
-                        part = part[0] + part[1] if not assistant_token else part[1]
+                        part = f"<|im_start|>Digi\n{part[1].strip()}<|im_end|>"
+
                         # this should be the assistent response, should end with an eos token
                         res = self._tokenize(
-                            part.strip(),
-                            add_eos_token=True,
+                            part,
+                            add_eos_token=False,
                             strip_bos_token=True,
                         )
-                        if assistant_token:
-                            res["input_ids"] = [
-                                assistant_token,
-                                *res["input_ids"],
-                            ]
+
                         # not masked out from labels
                         labels = copy.deepcopy(res["input_ids"])
                     elif part[0] == "SYSTEM:":
